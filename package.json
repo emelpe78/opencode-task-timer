@@ -1,0 +1,27 @@
+{
+  "name": "opencode-task-timer",
+  "version": "0.1.0",
+  "description": "OpenCode-2-TUI-Plugin: Laufzeiten je Aufgabe in der Seitenleiste",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "exports": {
+    "./tui": "./src/tui.tsx"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=22.6"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "tui"
+  ]
+}

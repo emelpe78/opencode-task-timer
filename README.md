@@ -1,13 +1,11 @@
 # opencode-task-timer
 
-Ein Plugin für OpenCode 2, das in der Seitenleiste anzeigt, wie lange der Agent
-für jede Aufgabe gebraucht hat.
+Ein Plugin für OpenCode 2, das in der Seitenleiste anzeigt, wie lange der Agent für jede Aufgabe gebraucht hat.
 
 ```
 Laufzeiten
     35s Zweite Aufgabe mit Fehler
-Fehler
- 1m 22s Seitenleisten-Probe · 20s warten
+    1m 22s Seitenleisten-Probe · 20s warten
 2 Aufgaben, 1m 57s, Ø 59s
 ```
 
@@ -21,33 +19,26 @@ Fehler
 opencode plugin add github:emelpe78/opencode-task-timer#v0.1.7
 ```
 
-Das Repository ist derzeit privat. Der Befehl braucht deshalb einen
-Git-Zugang mit Leserecht, also einen hinterlegten SSH-Schlüssel oder ein
-GitHub-Token. Ohne Zugriff schlägt der Abruf fehl.
+Das Repository ist derzeit privat. Der Befehl braucht deshalb einen Git-Zugang mit Leserecht, also einen hinterlegten SSH-Schlüssel oder ein GitHub-Token. Ohne Zugriff schlägt der Abruf fehl.
 
-Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in
-der Sitzung die erste Aufgabe gelaufen ist. Eine Sitzung ohne Aufgaben zeigt
-nichts.
+Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in der Sitzung die erste Aufgabe gelaufen ist. Eine Sitzung ohne Aufgaben zeigt nichts.
 
 ## Was gemessen wird
 
-Der vollständige Messvertrag steht in [README-Messung](docs/messung.md). Die
-Kurzfassung:
+Der vollständige Messvertrag steht in [README-Messung](docs/measurement.md). Die Kurzfassung:
 
 - Gemessen wird ein Agentenlauf, nicht ein Prompt.
-- Ein `steer`-Prompt und die Fortsetzung nach einer Kompaktierung verlängern die
-  laufende Aufgabe. Ein `queue`-Prompt gehört zur nächsten.
+- Ein `steer`-Prompt und die Fortsetzung nach einer Kompaktierung verlängern die laufende Aufgabe. Ein `queue`-Prompt gehört zur nächsten.
 - Subagenten werden nicht separat gezählt, ihre Zeit steckt in der Hauptlaufzeit.
-- Warten auf deine Freigabe zählt zur Laufzeit und wird beim Abschluss zusätzlich
-  ausgewiesen.
+- Warten auf deine Freigabe zählt zur Laufzeit und wird beim Abschluss zusätzlich ausgewiesen.
 - Titel ist die erste Zeile deines Prompts, auf 40 Zeichen gekürzt.
 
 ## Befehle
 
-| Befehl | Wirkung |
-| ------------------------- | ------------------------------------------- |
-| `/laufzeiten-reset` | Löscht die Laufzeiten der aktuellen Sitzung |
-| `/laufzeiten-reset-alle` | Löscht alle gespeicherten Laufzeiten |
+| Befehl                   | Wirkung                                     |
+| ------------------------ | ------------------------------------------- |
+| `/laufzeiten-reset`      | Löscht die Laufzeiten der aktuellen Sitzung |
+| `/laufzeiten-reset-alle` | Löscht alle gespeicherten Laufzeiten        |
 
 Beide stehen auch in der Befehlspalette und fragen vor dem Löschen nach.
 
@@ -55,52 +46,34 @@ Beide stehen auch in der Befehlspalette und fragen vor dem Löschen nach.
 
 - Höchstens zehn Zeilen, neueste oben.
 - Dauer als `42s`, `1m 23s`, ab einer Stunde `1h 02m`.
-- Status nur bei Abweichung: `Fehler`, `abgebrochen`, `verdrängt`, `beendet`,
-  `inaktiv`, `Zeitsprung`.
-- Der laufende Eintrag tickt sekündlich und zeigt `wartet auf dich`, wenn er auf
-  dich wartet.
+- Status nur bei Abweichung: `Fehler`, `abgebrochen`, `verdrängt`, `beendet`, `inaktiv`, `Zeitsprung`.
+- Der laufende Eintrag tickt sekündlich und zeigt `wartet auf dich`, wenn er auf dich wartet.
 - Summenzeile über alle abgeschlossenen Aufgaben der Sitzung.
-- Bei sehr schmaler Seitenleiste bleibt der Block aus, statt unleserlich zu
-  werden.
+- Bei sehr schmaler Seitenleiste bleibt der Block aus, statt unleserlich zu werden.
 - Rein lesend, kein Tastenkürzel.
 
 ## Speicherung
 
-Der Zustand liegt im durabelen Store des Hosts und überlebt Neustarts. Er
-enthält je Aufgabe nur den gekürzten Titel und Zeitpunkte, niemals den vollen
-Prompt. Aufbewahrung: 30 Tage und höchstens 200 Sitzungen. Gelöschte Sitzungen
-verschwinden sofort.
+Der Zustand liegt im durabelen Store des Hosts und überlebt Neustarts. Er enthält je Aufgabe nur den gekürzten Titel und Zeitpunkte, niemals den vollen Prompt. Aufbewahrung: 30 Tage und höchstens 200 Sitzungen. Gelöschte Sitzungen verschwinden sofort.
 
 ## Entwicklung
 
 ```
 npm install
-npm run bauen   # schreibt dist/tui.js und dist/laufzeit.js
+npm run bauen   # schreibt dist/tui.js und dist/measurement.js
 npm test
 ```
 
-Die Messlogik liegt in `src/laufzeit.ts` und ist frei von OpenCode-Abhängigkeiten,
-damit sie mit `node --test` prüfbar bleibt. `src/tui.tsx` verdrahtet nur die
-Ereignisse und rendert den Block.
+Die Messlogik liegt in `src/measurement.ts` und ist frei von OpenCode-Abhängigkeiten, damit sie mit `node --test` prüfbar bleibt. `src/tui.tsx` verdrahtet nur die Ereignisse und rendert den Block.
 
-`dist/` ist eingecheckt, damit die Installation direkt aus dem Repository
-funktioniert.
+`dist/` ist eingecheckt, damit die Installation direkt aus dem Repository funktioniert.
 
 ## Fallstricke beim Veröffentlichen
 
-- OpenCodes Solid-JSX-Transform überspringt Pfade mit `/node_modules/`. Ein
-  veröffentlichtes Plugin liegt genau dort, deshalb braucht es ein vorgebautes
-  `dist/`. Ohne das wird sein JSX als React-JSX übersetzt und der Ladevorgang
-  scheitert an einem fehlenden `react`.
-- `dist/` muss die Messlogik mitliefern. Ein Import auf `./laufzeit.ts` schlägt
-  fehl, weil `src/` nicht im Paket liegt.
-- `package.json` darf keines der Skripte `build`, `prepare`, `prepack`,
-  `install`, `preinstall` oder `postinstall` nennen. npms pacote löst sonst bei
-  einer Git-Abhängigkeit eine Vorbereitung aus, die hier scheitert. Der Build
-  heißt deshalb `bauen`.
-- Die Imports auf `@opentui/solid` und `solid-js` werden auf die Laufzeitmodule
-  des Hosts umgeschrieben (`opentui:runtime-module:…`), wie im offiziellen
-  Plugin `oc-tps`.
+- OpenCodes Solid-JSX-Transform überspringt Pfade mit `/node_modules/`. Ein veröffentlichtes Plugin liegt genau dort, deshalb braucht es ein vorgebautes `dist/`. Ohne das wird sein JSX als React-JSX übersetzt und der Ladevorgang scheitert an einem fehlenden `react`.
+- `dist/` muss die Messlogik mitliefern. Ein Import auf `./measurement.ts` schlägt fehl, weil `src/` nicht im Paket liegt.
+- `package.json` darf keines der Skripte `build`, `prepare`, `prepack`, `install`, `preinstall` oder `postinstall` nennen. npms pacote löst sonst bei einer Git-Abhängigkeit eine Vorbereitung aus, die hier scheitert. Der Build heißt deshalb `bauen`.
+- Die Imports auf `@opentui/solid` und `solid-js` werden auf die Laufzeitmodule des Hosts umgeschrieben (`opentui:runtime-module:…`), wie im offiziellen Plugin `oc-tps`.
 
 ## Voraussetzungen
 

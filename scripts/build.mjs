@@ -20,22 +20,22 @@ import { transformAsync } from "@babel/core";
 import presetTypeScript from "@babel/preset-typescript";
 import solid from "babel-preset-solid";
 
-const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const quelleTui = resolve(wurzel, "src/tui.tsx");
-const quelleLogik = resolve(wurzel, "src/laufzeit.ts");
-const zielTui = resolve(wurzel, "dist/tui.js");
-const zielLogik = resolve(wurzel, "dist/laufzeit.js");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const sourceTui = resolve(root, "src/tui.tsx");
+const sourceLogic = resolve(root, "src/measurement.ts");
+const targetTui = resolve(root, "dist/tui.js");
+const targetLogic = resolve(root, "dist/measurement.js");
 
 /** Der Host löst diese Namen über seine eingebauten Kopien auf. */
-const LAUFZEIT_MODULE = {
+const RUNTIME_MODULES = {
   "@opentui/solid": "opentui:runtime-module:%40opentui%2Fsolid",
   "solid-js": "opentui:runtime-module:solid-js",
 };
 
-const code = await readFile(quelleTui, "utf8");
+const code = await readFile(sourceTui, "utf8");
 
-const ergebnis = await transformAsync(code, {
-  filename: quelleTui,
+const result = await transformAsync(code, {
+  filename: sourceTui,
   configFile: false,
   babelrc: false,
   presets: [
@@ -46,40 +46,46 @@ const ergebnis = await transformAsync(code, {
     {
       name: "opencode-runtime-module",
       visitor: {
-        ImportDeclaration(pfad) {
-          const ersatz = LAUFZEIT_MODULE[pfad.node.source.value];
-          if (ersatz) pfad.node.source.value = ersatz;
+        ImportDeclaration(path) {
+          const replacement = RUNTIME_MODULES[path.node.source.value];
+          if (replacement) path.node.source.value = replacement;
         },
-        ExportNamedDeclaration(pfad) {
-          const quelleName = pfad.node.source?.value;
-          const ersatz = quelleName ? LAUFZEIT_MODULE[quelleName] : undefined;
-          if (ersatz && pfad.node.source) pfad.node.source.value = ersatz;
+        ExportNamedDeclaration(path) {
+          const sourceName = path.node.source?.value;
+          const replacement = sourceName
+            ? RUNTIME_MODULES[sourceName]
+            : undefined;
+          if (replacement && path.node.source)
+            path.node.source.value = replacement;
         },
       },
     },
   ],
 });
 
-if (!ergebnis?.code)
+if (!result?.code)
   throw new Error("Der Solid-Transform hat keinen Code erzeugt.");
 
 // Der Import in dist/tui.js zeigt auf die gebaute Logik, nicht auf die Quelle.
-const ausgabeTui = ergebnis.code.replace(/\.\/laufzeit\.ts/g, "./laufzeit.js");
+const tuiOutput = result.code.replace(
+  /\.\/measurement\.ts/g,
+  "./measurement.js",
+);
 
-await mkdir(dirname(zielTui), { recursive: true });
-await writeFile(zielTui, `${ausgabeTui}\n`, "utf8");
+await mkdir(dirname(targetTui), { recursive: true });
+await writeFile(targetTui, `${tuiOutput}\n`, "utf8");
 
 // Die Messlogik ist reines TypeScript ohne JSX und wird nur enttypt.
-const logik = await readFile(quelleLogik, "utf8");
-const logikErgebnis = await transformAsync(logik, {
-  filename: quelleLogik,
+const logic = await readFile(sourceLogic, "utf8");
+const logicResult = await transformAsync(logic, {
+  filename: sourceLogic,
   configFile: false,
   babelrc: false,
   presets: [[presetTypeScript, {}]],
 });
 
-if (!logikErgebnis?.code)
+if (!logicResult?.code)
   throw new Error("Der TypeScript-Transform hat keinen Code erzeugt.");
-await writeFile(zielLogik, `${logikErgebnis.code}\n`, "utf8");
+await writeFile(targetLogic, `${logicResult.code}\n`, "utf8");
 
-console.log(`dist/tui.js und dist/laufzeit.js geschrieben`);
+console.log(`dist/tui.js und dist/measurement.js geschrieben`);

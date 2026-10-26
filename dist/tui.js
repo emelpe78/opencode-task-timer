@@ -503,6 +503,11 @@ export default Plugin.define({
       return route.type === "session" ? route.sessionID : undefined;
     };
     context.keymap.layer(() => ({
+      // Ohne `mode` landet die Ebene im Standardmodus `base`, der nur bei
+      // leerem Eingabefeld greift. Palettensuche und Slash-Vervollständigung
+      // laufen dagegen im globalen Modus, deshalb blieben beide Befehle dort
+      // unsichtbar.
+      mode: "global",
       commands: [{
         id: "task-timer.reset",
         title: "Laufzeiten zurücksetzen",

@@ -63,3 +63,4 @@ Erfolgreiche Zeilen bleiben schlicht; nur Abweichungen tragen einen Status. Die 
 
 - `/ott-reset` leert die aktuelle Sitzung.
 - `/ott-reset-all` leert alles, nach einer Rückfrage.
+- Beide stehen in der Befehlspalette und in der Slash-Vervollständigung. Die Ebene ist deshalb `mode: "global"`: im Standardmodus `base` erreichen Palette und Vervollständigung die Befehle nicht.

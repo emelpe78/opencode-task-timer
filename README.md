@@ -74,6 +74,8 @@ Die Messlogik liegt in `src/measurement.ts` und ist frei von OpenCode-Abhängigk
 - `dist/` muss die Messlogik mitliefern. Ein Import auf `./measurement.ts` schlägt fehl, weil `src/` nicht im Paket liegt.
 - `package.json` darf keines der Skripte `build`, `prepare`, `prepack`, `install`, `preinstall` oder `postinstall` nennen. npms pacote löst sonst bei einer Git-Abhängigkeit eine Vorbereitung aus, die hier scheitert. Der Build heißt deshalb `bauen`.
 - Die Imports auf `@opentui/solid` und `solid-js` werden auf die Laufzeitmodule des Hosts umgeschrieben (`opentui:runtime-module:…`), wie im offiziellen Plugin `oc-tps`.
+- `context.keymap.layer` braucht `mode: "global"`, sonst landet die Ebene im Standardmodus `base`. Der greift nur bei leerem Eingabefeld, während Befehlspalette und Slash-Vervollständigung im globalen Modus laufen. Ohne `mode` sind die Befehle dort unsichtbar, obwohl `palette: true` und `slash` gesetzt sind.
+- Ein Plugin in `~/.config/opencode/plugins/` ist ein Server-Plugin und bekommt keinen TUI-Kontext. `context.keymap` fehlt dort, der Ladevorgang scheitert mit `undefined is not an object`. TUI-Plugins gehören über `cli.json` oder `opencode plugin add` eingebunden.
 
 ## Voraussetzungen
 

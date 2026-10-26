@@ -14,6 +14,7 @@ Patch-Release: **Titel bleiben stehen, der Block spricht Englisch**.
 
 - **Titel fehlte:** `session.inbox.enqueued` kommt vor `session.execution.started`. Der Prompt-Text wird jetzt schon beim Vormerken je Sitzung abgelegt und benennt den startenden Lauf, statt beim Start ins Leere zu greifen.
 - **Zustand überschrieb sich:** Der Store schreibt asynchron und lieferte kurz danach noch den alten Stand. Ereignisse rechnen deshalb auf einem eigenen Stand mit Revision; der Store gilt nur, wenn er nicht älter ist. Zwei Prompts kurz hintereinander verlieren so keinen Titel mehr.
+- **Befehle waren unauffindbar:** Die Tastenebene registrierte kein `mode` und lag damit im Standardmodus `base`, der nur bei leerem Eingabefeld greift. Befehlspalette und Slash-Vervollständigung laufen dagegen im globalen Modus und sahen weder `/laufzeiten-reset` noch `/ott-reset`. Die Ebene ist jetzt `mode: "global"`, beide Befehle erscheinen wieder in Palette und Vervollständigung.
 - Ein abgebrochener Prompt (`session.inbox.cancelled`) wird entfernt und benennt keinen späteren Lauf.
 
 ### Geändert

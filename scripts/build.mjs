@@ -38,7 +38,10 @@ const ergebnis = await transformAsync(code, {
   filename: quelleTui,
   configFile: false,
   babelrc: false,
-  presets: [[presetTypeScript, {}], [solid, { moduleName: "@opentui/solid", generate: "universal" }]],
+  presets: [
+    [presetTypeScript, {}],
+    [solid, { moduleName: "@opentui/solid", generate: "universal" }],
+  ],
   plugins: [
     {
       name: "opencode-runtime-module",
@@ -57,7 +60,8 @@ const ergebnis = await transformAsync(code, {
   ],
 });
 
-if (!ergebnis?.code) throw new Error("Der Solid-Transform hat keinen Code erzeugt.");
+if (!ergebnis?.code)
+  throw new Error("Der Solid-Transform hat keinen Code erzeugt.");
 
 // Der Import in dist/tui.js zeigt auf die gebaute Logik, nicht auf die Quelle.
 const ausgabeTui = ergebnis.code.replace(/\.\/laufzeit\.ts/g, "./laufzeit.js");
@@ -74,7 +78,8 @@ const logikErgebnis = await transformAsync(logik, {
   presets: [[presetTypeScript, {}]],
 });
 
-if (!logikErgebnis?.code) throw new Error("Der TypeScript-Transform hat keinen Code erzeugt.");
+if (!logikErgebnis?.code)
+  throw new Error("Der TypeScript-Transform hat keinen Code erzeugt.");
 await writeFile(zielLogik, `${logikErgebnis.code}\n`, "utf8");
 
 console.log(`dist/tui.js und dist/laufzeit.js geschrieben`);

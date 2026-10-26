@@ -1,6 +1,6 @@
 {
   "name": "opencode-task-timer",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "OpenCode-2-TUI-Plugin: Laufzeiten je Aufgabe in der Seitenleiste",
   "license": "MIT",
   "type": "module",
@@ -13,8 +13,8 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "test": "node --test 'test/*.test.ts'"
+    "test": "node --test 'test/*.test.ts'",
+    "bauen": "node scripts/build.mjs"
   },
   "engines": {
     "node": ">=22.6"

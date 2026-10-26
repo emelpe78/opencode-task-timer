@@ -24,6 +24,8 @@ import {
   summaryLine,
   visibleEntries,
   waitingNote,
+  UNTITLED,
+  WAITING_HINT,
   type Entry,
   type Event,
   type InterruptionReason,
@@ -98,19 +100,37 @@ export default Plugin.define({
         draft.state = cleaned;
       });
     }
-
     // Ein Taktzähler stößt die sekündliche Neuberechnung an. Der Zustand selbst
     // ist der reaktive Store, deshalb genügt ein Zähler ohne Wert.
     const [tick, setTick] = createSignal(0);
     const nudge = (): void => setTick((value) => value + 1);
 
+    // Der Store schreibt asynchron und zieht seinen Stand verzögert nach. Würde
+    // jedes Ereignis blind aus dem Store rechnen, überschriebe der alte Stand
+    // das frisch Zugestellte. Genau daran ging der Titel verloren. Deshalb trägt
+    // jeder Zustand eine Revision: der Store gilt nur, wenn er nicht älter ist
+    // als der eigene Stand. So gehen Änderungen einer zweiten TUI nicht
+    // verloren, und der eigene Fortschritt wird nicht zurückgedreht.
+    const [latest, setLatest] = createSignal<State>(cleaned);
+
+    const advance = (next: State): Promise<void> => {
+      setLatest(() => next);
+      return write((draft) => {
+        draft.state = next;
+      }).then(
+        () => undefined,
+        () => undefined,
+      );
+    };
+
+    /** Der Zustand, auf den das nächste Ereignis trifft. */
+    const currentState = (): State => (stored.state.rev > latest().rev ? stored.state : latest());
+
     const accept = (event: Event): void => {
-      const before = stored.state;
+      const before = currentState();
       const after = apply(before, event);
       if (after === before) return;
-      void write((draft) => {
-        draft.state = after;
-      });
+      void advance(after);
       nudge();
     };
 
@@ -149,20 +169,34 @@ export default Plugin.define({
           return;
         }
         case "session.inbox.enqueued": {
+          // Der Host meldet den Prompt vor dem Lauf. Text und Zustellart werden
+          // vorgemerkt, damit der Eintrag beim Start schon seinen Titel kennt.
           const id = deliveryID(event);
-          if (!id) return;
-          accept({ kind: "prompt-queued", deliveryID: id, text: promptText(event) });
+          if (!id || !session) return;
+          const item = (data.item ?? {}) as { delivery?: unknown };
+          const delivery = item.delivery === "steer" ? "steer" : "queue";
+          accept({
+            kind: "prompt-queued",
+            deliveryID: id,
+            session,
+            text: promptText(event),
+            delivery,
+          });
           return;
         }
         case "session.inbox.delivered": {
           const id = deliveryID(event);
           if (!session || !id) return;
+          // Die Zustellart vom Vormerken bleibt maßgeblich; das Ereignis selbst
+          // trägt sie nicht.
+          const queued = currentState().pending[session] ?? [];
+          const delivery = queued.find((item) => item.id === id)?.delivery ?? "queue";
           accept({
             kind: "prompt-delivered",
             deliveryID: id,
             session,
             time,
-            delivery: "queue",
+            delivery,
             isChild,
           });
           return;
@@ -179,6 +213,13 @@ export default Plugin.define({
             delivery: "steer",
             isChild,
           });
+          return;
+        }
+        case "session.inbox.cancelled": {
+          // Ein verworfener Prompt benennt keinen Lauf.
+          const id = deliveryID(event);
+          if (!session || !id) return;
+          accept({ kind: "prompt-cancelled", deliveryID: id, session });
           return;
         }
         case "session.permissions": {
@@ -262,7 +303,7 @@ export default Plugin.define({
           <Show when={waiting() || status() !== undefined || note() !== undefined}>
             <box flexDirection="row" paddingLeft={8}>
               <Show when={waiting()}>
-                <text fg={context.theme.hue.orange[500]}>wartet auf dich</text>
+                <text fg={context.theme.hue.orange[500]}>{WAITING_HINT}</text>
               </Show>
               <Show when={!waiting() && status() !== undefined}>
                 <text fg={color()}>{status()}</text>
@@ -283,9 +324,9 @@ export default Plugin.define({
         tick();
         return Date.now();
       });
-      const list = createMemo(() => visibleEntries(stored.state, props.sessionID));
-      const running = createMemo(() => runningEntry(stored.state, props.sessionID));
-      const numbers = createMemo(() => stats(stored.state.entries, now()));
+      const list = createMemo(() => visibleEntries(currentState(), props.sessionID));
+      const running = createMemo(() => runningEntry(currentState(), props.sessionID));
+      const numbers = createMemo(() => stats(currentState().entries, now()));
       const summary = createMemo(() => summaryLine(numbers()));
 
       // Eine Kind-Sitzung zeigt nichts: die Liste gehört zur Wurzel-Aufgabe.
@@ -307,7 +348,7 @@ export default Plugin.define({
           }}
         >
           <Show when={visible()}>
-            <text fg={context.theme.text.muted}>Laufzeiten</text>
+            <text fg={context.theme.text.muted}>Durations</text>
             <Show when={running() !== undefined}>
               <Row entry={running()!} now={now()} width={width()} />
             </Show>
@@ -344,9 +385,8 @@ export default Plugin.define({
           : "Laufzeiten dieser Sitzung verwerfen?",
       });
       if (!confirmed) return;
-      await write((draft) => {
-        draft.state = all ? emptyState() : clearSession(draft.state, session!);
-      });
+      // Zurücksetzen behält die Revision bei, damit die Anzeige sofort folgt.
+      await advance(all ? emptyState() : clearSession(currentState(), session!));
       nudge();
       context.ui.toast.show({ message: "Laufzeiten zurückgesetzt", variant: "info" });
     };
@@ -363,7 +403,7 @@ export default Plugin.define({
           title: "Laufzeiten zurücksetzen",
           group: "Laufzeiten",
           palette: true,
-          slash: { name: "laufzeiten-reset" },
+          slash: { name: "ott-reset" },
           run: () => {
             void reset(false, currentSession());
           },
@@ -373,7 +413,7 @@ export default Plugin.define({
           title: "Laufzeiten aller Sitzungen zurücksetzen",
           group: "Laufzeiten",
           palette: true,
-          slash: { name: "laufzeiten-reset-alle" },
+          slash: { name: "ott-reset-all" },
           run: () => {
             void reset(true, currentSession());
           },

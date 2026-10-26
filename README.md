@@ -3,10 +3,10 @@
 Ein Plugin für OpenCode 2, das in der Seitenleiste anzeigt, wie lange der Agent für jede Aufgabe gebraucht hat.
 
 ```
-Laufzeiten
+Durations
     35s Zweite Aufgabe mit Fehler
-    1m 22s Seitenleisten-Probe · 20s warten
-2 Aufgaben, 1m 57s, Ø 59s
+    1m 22s Seitenleisten-Probe · 20s waiting
+2 tasks, 1m 57s, Ø 59s
 ```
 
 - Die Uhr startet, wenn der Agent mit einer Aufgabe beginnt.
@@ -16,7 +16,7 @@ Laufzeiten
 ## Installation
 
 ```
-opencode plugin add github:emelpe78/opencode-task-timer#v0.1.7
+opencode plugin add github:emelpe78/opencode-task-timer#v0.1.8
 ```
 
 Das Repository ist derzeit privat. Der Befehl braucht deshalb einen Git-Zugang mit Leserecht, also einen hinterlegten SSH-Schlüssel oder ein GitHub-Token. Ohne Zugriff schlägt der Abruf fehl.
@@ -35,10 +35,10 @@ Der vollständige Messvertrag steht in [README-Messung](docs/measurement.md). Di
 
 ## Befehle
 
-| Befehl                   | Wirkung                                     |
-| ------------------------ | ------------------------------------------- |
-| `/laufzeiten-reset`      | Löscht die Laufzeiten der aktuellen Sitzung |
-| `/laufzeiten-reset-alle` | Löscht alle gespeicherten Laufzeiten        |
+| Befehl           | Wirkung                                     |
+| ---------------- | ------------------------------------------- |
+| `/ott-reset`     | Löscht die Laufzeiten der aktuellen Sitzung |
+| `/ott-reset-all` | Löscht alle gespeicherten Laufzeiten        |
 
 Beide stehen auch in der Befehlspalette und fragen vor dem Löschen nach.
 
@@ -46,9 +46,9 @@ Beide stehen auch in der Befehlspalette und fragen vor dem Löschen nach.
 
 - Höchstens zehn Zeilen, neueste oben.
 - Dauer als `42s`, `1m 23s`, ab einer Stunde `1h 02m`.
-- Status nur bei Abweichung: `Fehler`, `abgebrochen`, `verdrängt`, `beendet`, `inaktiv`, `Zeitsprung`.
-- Der laufende Eintrag tickt sekündlich und zeigt `wartet auf dich`, wenn er auf dich wartet.
-- Summenzeile über alle abgeschlossenen Aufgaben der Sitzung.
+- Status nur bei Abweichung: `error`, `aborted`, `superseded`, `ended`, `inactive`, `clock skew`.
+- Der laufende Eintrag tickt sekündlich und zeigt `waiting for you`, wenn er auf dich wartet.
+- Summenzeile über alle abgeschlossenen Aufgaben der Sitzung, englisch.
 - Bei sehr schmaler Seitenleiste bleibt der Block aus, statt unleserlich zu werden.
 - Rein lesend, kein Tastenkürzel.
 

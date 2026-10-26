@@ -21,14 +21,16 @@ export const MAX_ENTRIES = 10;
 export const MAX_TITLE = 40;
 export const RETENTION_DAYS = 30;
 export const MAX_SESSIONS = 200;
-export const UNTITLED = "ohne Titel";
-export const WAITING_HINT = "wartet auf dich";
-export const RUNNING_HINT = "läuft";
+export const UNTITLED = "untitled";
+export const WAITING_HINT = "waiting for you";
+export const RUNNING_HINT = "running";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export function emptyState() {
   return {
+    rev: 0,
     entries: [],
     texts: {},
+    pending: {},
     lastPrompt: {},
     sessions: [],
     heartbeats: {}
@@ -52,7 +54,7 @@ export function formatDuration(ms) {
 
 /**
  * Titel aus dem Prompt: erste nicht leere Zeile, auf `MAX_TITLE` Zeichen
- * gekürzt. Ohne verwertbaren Text bleibt `ohne Titel`.
+ * gekürzt. Ohne verwertbaren Text bleibt `untitled`.
  */
 export function shortenTitle(text) {
   if (!text) return UNTITLED;
@@ -69,17 +71,17 @@ export function statusLabel(status) {
     case "running":
       return RUNNING_HINT;
     case "error":
-      return "Fehler";
+      return "error";
     case "aborted":
-      return "abgebrochen";
+      return "aborted";
     case "superseded":
-      return "verdrängt";
+      return "superseded";
     case "ended":
-      return "beendet";
+      return "ended";
     case "inactive":
-      return "inaktiv";
+      return "inactive";
     case "clockSkew":
-      return "Zeitsprung";
+      return "clock skew";
     case "done":
       return undefined;
   }
@@ -129,7 +131,7 @@ export function stats(entries, now) {
 }
 export function summaryLine(summary) {
   if (summary.count === 0) return undefined;
-  const tasks = summary.count === 1 ? "1 Aufgabe" : `${summary.count} Aufgaben`;
+  const tasks = summary.count === 1 ? "1 task" : `${summary.count} tasks`;
   return `${tasks}, ${formatDuration(summary.totalMs)}, Ø ${formatDuration(summary.averageMs)}`;
 }
 
@@ -138,7 +140,7 @@ export function waitingNote(entry, now) {
   if (entry.status === "running") return undefined;
   const waiting = waitingMs(entry, now);
   if (waiting < 1000) return undefined;
-  return `${formatDuration(waiting)} warten`;
+  return `${formatDuration(waiting)} waiting`;
 }
 
 /** Einträge einer Sitzung, neueste zuerst, auf `MAX_ENTRIES` begrenzt. */
@@ -153,7 +155,7 @@ export function runningEntry(state, session) {
 // Zustandsübergänge
 // ---------------------------------------------------------------------------
 
-function withEntries(state, entries) {
+export function withEntries(state, entries) {
   return {
     ...state,
     entries
@@ -204,6 +206,14 @@ function finish(state, session, time, status) {
 
 /** Wendet ein Ereignis auf den Zustand an. Ohne Seiteneffekte. */
 export function apply(state, event) {
+  const next = reduce(state, event);
+  // Jede angenommene Änderung zählt eine Revision weiter.
+  return next === state ? state : {
+    ...next,
+    rev: state.rev + 1
+  };
+}
+function reduce(state, event) {
   switch (event.kind) {
     case "run-started":
       {
@@ -215,11 +225,19 @@ export function apply(state, event) {
         // Fortsetzung, etwa nach einer Kompaktierung: derselbe Auftrag läuft
         // weiter, es entsteht keine neue Zeile.
         if (running) return touched;
-        const fallback = touched.lastPrompt[event.session];
+        // Der Host meldet den Prompt vor dem Start, die Zustellung aber erst
+        // danach. Deshalb ist der vorgemerkte Prompt die richtige Quelle und der
+        // zuletzt zugestellte nur der Rückfall. `titleFrom` verhindert später,
+        // dass dieselbe Zustellung den Titel ein zweites Mal ergänzt.
+        const queued = touched.pending[event.session]?.[0];
+        const fallback = queued?.text ?? touched.lastPrompt[event.session];
         const entry = {
           id: event.id,
           session: event.session,
           title: shortenTitle(fallback),
+          ...(queued === undefined ? {} : {
+            titleFrom: queued.id
+          }),
           start: event.time,
           status: "running",
           waitingMs: 0
@@ -238,11 +256,21 @@ export function apply(state, event) {
       }
     case "prompt-queued":
       {
+        const queue = state.pending[event.session] ?? [];
+        const known = queue.some(item => item.id === event.deliveryID);
         return {
           ...state,
           texts: {
             ...state.texts,
             [event.deliveryID]: event.text
+          },
+          pending: {
+            ...state.pending,
+            [event.session]: known ? queue : [...queue, {
+              id: event.deliveryID,
+              text: event.text,
+              delivery: event.delivery
+            }]
           }
         };
       }
@@ -251,29 +279,68 @@ export function apply(state, event) {
         if (event.isChild) return state;
         const text = state.texts[event.deliveryID];
         const title = shortenTitle(text);
+        // Der Prompt ist zugestellt: Text und Vormerkung sind verbraucht.
         const texts = {
           ...state.texts
         };
         delete texts[event.deliveryID];
+        const queue = (state.pending[event.session] ?? []).filter(item => item.id !== event.deliveryID);
+        const pending = {
+          ...state.pending,
+          [event.session]: queue
+        };
+        if (queue.length === 0) delete pending[event.session];
         const touched = {
           ...state,
           texts,
+          pending,
           lastPrompt: {
             ...state.lastPrompt,
             [event.session]: text ?? title
           }
         };
         const running = runningEntry(touched, event.session);
-        // Ein `queue`-Prompt gehört zum naechsten Lauf. Ist noch einer offen,
-        // wird er nicht umbenannt, sonst stuende ein fremder Titel an einer
-        // fremden Laufzeit.
         if (!running) return touched;
+        // Hat dieser Prompt den Lauf schon beim Start benannt, steht der Titel
+        // bereits und wird nicht ein zweites Mal ergänzt.
+        if (running.titleFrom === event.deliveryID) return touched;
+        // Ein `steer`-Prompt schiebt sich in die laufende Arbeit und ergänzt
+        // deren Titel.
         if (event.delivery === "steer") {
           return replace(touched, running.id, {
             title: appendTitle(running.title, title)
           });
         }
+        // Ein `queue`-Prompt gehört zum naechsten Lauf. Ist noch einer offen, wird
+        // er nicht umbenannt, sonst stuende ein fremder Titel an einer fremden
+        // Laufzeit. Ist der offene Lauf noch ohne Titel, ist das die eigene
+        // Zustellung, die der Host erst nach dem Start meldet.
+        if (running.title === UNTITLED) {
+          return replace(touched, running.id, {
+            title
+          });
+        }
         return touched;
+      }
+    case "prompt-cancelled":
+      {
+        // Ein verworfener Prompt darf weder den nächsten Lauf benennen noch als
+        // Rückfall liegen bleiben.
+        const texts = {
+          ...state.texts
+        };
+        delete texts[event.deliveryID];
+        const queue = (state.pending[event.session] ?? []).filter(item => item.id !== event.deliveryID);
+        const pending = {
+          ...state.pending,
+          [event.session]: queue
+        };
+        if (queue.length === 0) delete pending[event.session];
+        return {
+          ...state,
+          texts,
+          pending
+        };
       }
     case "waiting-started":
       {
@@ -298,17 +365,22 @@ export function apply(state, event) {
         const texts = {
           ...state.texts
         };
+        const pending = {
+          ...state.pending
+        };
         const lastPrompt = {
           ...state.lastPrompt
         };
         const heartbeats = {
           ...state.heartbeats
         };
+        delete pending[event.session];
         delete lastPrompt[event.session];
         delete heartbeats[event.session];
         return {
           entries: state.entries.filter(entry => entry.session !== event.session),
           texts,
+          pending,
           lastPrompt,
           sessions: state.sessions.filter(session => session !== event.session),
           heartbeats
@@ -351,22 +423,31 @@ export function prune(state, now) {
   const kept = new Set(state.sessions.slice(Math.max(0, state.sessions.length - MAX_SESSIONS)));
   const entries = state.entries.filter(entry => entry.start >= cutoff && kept.has(entry.session));
   const liveSessions = new Set(entries.map(entry => entry.session));
-  const texts = {};
-  for (const [id, text] of Object.entries(state.texts)) {
-    // Vorgemerkte Texte ohne Zustellung sind nach einem Aufräumen wertlos.
-    if (text !== undefined) texts[id] = text;
-  }
+  const pending = {};
   const lastPrompt = {};
   const heartbeats = {};
   for (const session of liveSessions) {
+    const queue = state.pending[session];
+    if (queue !== undefined && queue.length > 0) pending[session] = queue;
     const prompt = state.lastPrompt[session];
     if (prompt !== undefined) lastPrompt[session] = prompt;
     const beat = state.heartbeats[session];
     if (beat !== undefined) heartbeats[session] = beat;
   }
+  // Vorgemerkte Texte ohne noch offene Vormerkung sind nach einem Aufräumen
+  // wertlos: ihre Zustellung kommt nicht mehr.
+  const texts = {};
+  for (const queue of Object.values(pending)) {
+    for (const item of queue) {
+      const text = state.texts[item.id];
+      if (text !== undefined) texts[item.id] = text;
+    }
+  }
   return {
+    rev: state.rev + 1,
     entries,
     texts,
+    pending,
     lastPrompt,
     sessions: state.sessions.filter(session => liveSessions.has(session)),
     heartbeats
@@ -375,5 +456,8 @@ export function prune(state, now) {
 
 /** Leert die Einträge einer Sitzung, ohne andere Sitzungen anzutasten. */
 export function clearSession(state, session) {
-  return withEntries(state, state.entries.filter(entry => entry.session !== session));
+  return {
+    ...withEntries(state, state.entries.filter(entry => entry.session !== session)),
+    rev: state.rev + 1
+  };
 }

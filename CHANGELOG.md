@@ -6,6 +6,21 @@ Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Cha
 
 ---
 
+## [0.1.8] - 2026-10-26
+
+Patch-Release: **Titel bleiben stehen, der Block spricht Englisch**.
+
+### Behoben
+
+- **Titel fehlte:** `session.inbox.enqueued` kommt vor `session.execution.started`. Der Prompt-Text wird jetzt schon beim Vormerken je Sitzung abgelegt und benennt den startenden Lauf, statt beim Start ins Leere zu greifen.
+- **Zustand überschrieb sich:** Der Store schreibt asynchron und lieferte kurz danach noch den alten Stand. Ereignisse rechnen deshalb auf einem eigenen Stand mit Revision; der Store gilt nur, wenn er nicht älter ist. Zwei Prompts kurz hintereinander verlieren so keinen Titel mehr.
+- Ein abgebrochener Prompt (`session.inbox.cancelled`) wird entfernt und benennt keinen späteren Lauf.
+
+### Geändert
+
+- Der Block in der Seitenleiste ist englisch: Überschrift `Durations`, Status `error`, `aborted`, `superseded`, `ended`, `inactive`, `clock skew`, Hinweis `waiting for you`, Zusatz `20s waiting`, Summenzeile `2 tasks, 1m 57s, Ø 59s` und `untitled`. Befehle, Palettentitel, Dialoge und Toasts bleiben deutsch.
+- Die beiden Befehle heißen jetzt `/ott-reset` und `/ott-reset-all` statt `/laufzeiten-reset` und `/laufzeiten-reset-alle`. Die alten Namen entfallen ersatzlos; Titel, Gruppe, Rückfrage und Toast bleiben deutsch.
+
 ## [0.1.7] - 2026-10-26
 
 Patch-Release: **Die veröffentlichte Fassung lädt wieder**.

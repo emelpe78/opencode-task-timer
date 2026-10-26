@@ -18,7 +18,7 @@ import { createElement as _$createElement } from "opentui:runtime-module:%40open
 
 import { Plugin } from "@opencode/plugin/tui";
 import { For, Show, createMemo, createSignal, onCleanup } from "opentui:runtime-module:solid-js";
-import { apply, clearSession, closeStaleRuns, durationMs, emptyState, formatDuration, prune, runningEntry, stats, statusLabel, summaryLine, visibleEntries, waitingNote } from "./measurement.js";
+import { apply, clearSession, closeStaleRuns, durationMs, emptyState, formatDuration, prune, runningEntry, stats, statusLabel, summaryLine, visibleEntries, waitingNote, WAITING_HINT } from "./measurement.js";
 
 /** Speicherschlüssel im durabelen Host-Store. */
 const STORAGE = "laufzeiten";
@@ -73,18 +73,32 @@ export default Plugin.define({
         draft.state = cleaned;
       });
     }
-
     // Ein Taktzähler stößt die sekündliche Neuberechnung an. Der Zustand selbst
     // ist der reaktive Store, deshalb genügt ein Zähler ohne Wert.
     const [tick, setTick] = createSignal(0);
     const nudge = () => setTick(value => value + 1);
+
+    // Der Store schreibt asynchron und zieht seinen Stand verzögert nach. Würde
+    // jedes Ereignis blind aus dem Store rechnen, überschriebe der alte Stand
+    // das frisch Zugestellte. Genau daran ging der Titel verloren. Deshalb trägt
+    // jeder Zustand eine Revision: der Store gilt nur, wenn er nicht älter ist
+    // als der eigene Stand. So gehen Änderungen einer zweiten TUI nicht
+    // verloren, und der eigene Fortschritt wird nicht zurückgedreht.
+    const [latest, setLatest] = createSignal(cleaned);
+    const advance = next => {
+      setLatest(() => next);
+      return write(draft => {
+        draft.state = next;
+      }).then(() => undefined, () => undefined);
+    };
+
+    /** Der Zustand, auf den das nächste Ereignis trifft. */
+    const currentState = () => stored.state.rev > latest().rev ? stored.state : latest();
     const accept = event => {
-      const before = stored.state;
+      const before = currentState();
       const after = apply(before, event);
       if (after === before) return;
-      void write(draft => {
-        draft.state = after;
-      });
+      void advance(after);
       nudge();
     };
 
@@ -151,12 +165,18 @@ export default Plugin.define({
           }
         case "session.inbox.enqueued":
           {
+            // Der Host meldet den Prompt vor dem Lauf. Text und Zustellart werden
+            // vorgemerkt, damit der Eintrag beim Start schon seinen Titel kennt.
             const id = deliveryID(event);
-            if (!id) return;
+            if (!id || !session) return;
+            const item = data.item ?? {};
+            const delivery = item.delivery === "steer" ? "steer" : "queue";
             accept({
               kind: "prompt-queued",
               deliveryID: id,
-              text: promptText(event)
+              session,
+              text: promptText(event),
+              delivery
             });
             return;
           }
@@ -164,12 +184,16 @@ export default Plugin.define({
           {
             const id = deliveryID(event);
             if (!session || !id) return;
+            // Die Zustellart vom Vormerken bleibt maßgeblich; das Ereignis selbst
+            // trägt sie nicht.
+            const queued = currentState().pending[session] ?? [];
+            const delivery = queued.find(item => item.id === id)?.delivery ?? "queue";
             accept({
               kind: "prompt-delivered",
               deliveryID: id,
               session,
               time,
-              delivery: "queue",
+              delivery,
               isChild
             });
             return;
@@ -186,6 +210,18 @@ export default Plugin.define({
               time,
               delivery: "steer",
               isChild
+            });
+            return;
+          }
+        case "session.inbox.cancelled":
+          {
+            // Ein verworfener Prompt benennt keinen Lauf.
+            const id = deliveryID(event);
+            if (!session || !id) return;
+            accept({
+              kind: "prompt-cancelled",
+              deliveryID: id,
+              session
             });
             return;
           }
@@ -299,7 +335,7 @@ export default Plugin.define({
               },
               get children() {
                 var _el$7 = _$createElement("text");
-                _$insertNode(_el$7, _$createTextNode(`wartet auf dich`));
+                _$insert(_el$7, WAITING_HINT);
                 _$effect(_$p => _$setProp(_el$7, "fg", context.theme.hue.orange[500], _$p));
                 return _el$7;
               }
@@ -309,10 +345,10 @@ export default Plugin.define({
                 return _$memo(() => !!!waiting())() && status() !== undefined;
               },
               get children() {
-                var _el$9 = _$createElement("text");
-                _$insert(_el$9, status);
-                _$effect(_$p => _$setProp(_el$9, "fg", color(), _$p));
-                return _el$9;
+                var _el$8 = _$createElement("text");
+                _$insert(_el$8, status);
+                _$effect(_$p => _$setProp(_el$8, "fg", color(), _$p));
+                return _el$8;
               }
             }), null);
             _$insert(_el$6, _$createComponent(Show, {
@@ -320,12 +356,12 @@ export default Plugin.define({
                 return note() !== undefined;
               },
               get children() {
-                var _el$0 = _$createElement("text"),
-                  _el$1 = _$createTextNode(` · `);
-                _$insertNode(_el$0, _el$1);
-                _$insert(_el$0, note, null);
-                _$effect(_$p => _$setProp(_el$0, "fg", context.theme.text.muted, _$p));
-                return _el$0;
+                var _el$9 = _$createElement("text"),
+                  _el$0 = _$createTextNode(` · `);
+                _$insertNode(_el$9, _el$0);
+                _$insert(_el$9, note, null);
+                _$effect(_$p => _$setProp(_el$9, "fg", context.theme.text.muted, _$p));
+                return _el$9;
               }
             }), null);
             return _el$6;
@@ -350,9 +386,9 @@ export default Plugin.define({
         tick();
         return Date.now();
       });
-      const list = createMemo(() => visibleEntries(stored.state, props.sessionID));
-      const running = createMemo(() => runningEntry(stored.state, props.sessionID));
-      const numbers = createMemo(() => stats(stored.state.entries, now()));
+      const list = createMemo(() => visibleEntries(currentState(), props.sessionID));
+      const running = createMemo(() => runningEntry(currentState(), props.sessionID));
+      const numbers = createMemo(() => stats(currentState().entries, now()));
       const summary = createMemo(() => summaryLine(numbers()));
 
       // Eine Kind-Sitzung zeigt nichts: die Liste gehört zur Wurzel-Aufgabe.
@@ -361,26 +397,26 @@ export default Plugin.define({
         return list().length > 0 && width() >= MIN_WIDTH;
       });
       return (() => {
-        var _el$10 = _$createElement("box");
+        var _el$1 = _$createElement("box");
         _$use(element => {
           const box = element;
           const measure = () => setWidth(box.width ?? 0);
           box.onSizeChange = measure;
           measure();
-        }, _el$10);
-        _$setProp(_el$10, "flexDirection", "column");
-        _$setProp(_el$10, "paddingTop", 1);
-        _$setProp(_el$10, "flexShrink", 0);
-        _$insert(_el$10, _$createComponent(Show, {
+        }, _el$1);
+        _$setProp(_el$1, "flexDirection", "column");
+        _$setProp(_el$1, "paddingTop", 1);
+        _$setProp(_el$1, "flexShrink", 0);
+        _$insert(_el$1, _$createComponent(Show, {
           get when() {
             return visible();
           },
           get children() {
             return [(() => {
-              var _el$11 = _$createElement("text");
-              _$insertNode(_el$11, _$createTextNode(`Laufzeiten`));
-              _$effect(_$p => _$setProp(_el$11, "fg", context.theme.text.muted, _$p));
-              return _el$11;
+              var _el$10 = _$createElement("text");
+              _$insertNode(_el$10, _$createTextNode(`Durations`));
+              _$effect(_$p => _$setProp(_el$10, "fg", context.theme.text.muted, _$p));
+              return _el$10;
             })(), _$createComponent(Show, {
               get when() {
                 return running() !== undefined;
@@ -416,15 +452,15 @@ export default Plugin.define({
                 return summary() !== undefined;
               },
               get children() {
-                var _el$13 = _$createElement("text");
-                _$insert(_el$13, summary);
-                _$effect(_$p => _$setProp(_el$13, "fg", context.theme.text.muted, _$p));
-                return _el$13;
+                var _el$12 = _$createElement("text");
+                _$insert(_el$12, summary);
+                _$effect(_$p => _$setProp(_el$12, "fg", context.theme.text.muted, _$p));
+                return _el$12;
               }
             })];
           }
         }));
-        return _el$10;
+        return _el$1;
       })();
     }
     const slot = context.ui.slot({
@@ -454,9 +490,8 @@ export default Plugin.define({
         message: all ? "Alle gespeicherten Laufzeiten verwerfen?" : "Laufzeiten dieser Sitzung verwerfen?"
       });
       if (!confirmed) return;
-      await write(draft => {
-        draft.state = all ? emptyState() : clearSession(draft.state, session);
-      });
+      // Zurücksetzen behält die Revision bei, damit die Anzeige sofort folgt.
+      await advance(all ? emptyState() : clearSession(currentState(), session));
       nudge();
       context.ui.toast.show({
         message: "Laufzeiten zurückgesetzt",
@@ -474,7 +509,7 @@ export default Plugin.define({
         group: "Laufzeiten",
         palette: true,
         slash: {
-          name: "laufzeiten-reset"
+          name: "ott-reset"
         },
         run: () => {
           void reset(false, currentSession());
@@ -485,7 +520,7 @@ export default Plugin.define({
         group: "Laufzeiten",
         palette: true,
         slash: {
-          name: "laufzeiten-reset-alle"
+          name: "ott-reset-all"
         },
         run: () => {
           void reset(true, currentSession());

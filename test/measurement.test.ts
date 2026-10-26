@@ -75,12 +75,12 @@ test("shortenTitle normalisiert inneren Leerraum", () => {
 
 test("statusLabel laesst erfolgreiche Laeufe schlicht", () => {
   assert.equal(statusLabel("done"), undefined);
-  assert.equal(statusLabel("error"), "Fehler");
-  assert.equal(statusLabel("aborted"), "abgebrochen");
-  assert.equal(statusLabel("superseded"), "verdrängt");
-  assert.equal(statusLabel("ended"), "beendet");
-  assert.equal(statusLabel("inactive"), "inaktiv");
-  assert.equal(statusLabel("clockSkew"), "Zeitsprung");
+  assert.equal(statusLabel("error"), "error");
+  assert.equal(statusLabel("aborted"), "aborted");
+  assert.equal(statusLabel("superseded"), "superseded");
+  assert.equal(statusLabel("ended"), "ended");
+  assert.equal(statusLabel("inactive"), "inactive");
+  assert.equal(statusLabel("clockSkew"), "clock skew");
 });
 
 test("statusFromReason bildet alle vier Abbruchgruende ab", () => {
@@ -119,7 +119,7 @@ test("Kind-Sitzungen werden vollstaendig ignoriert", () => {
   assert.equal(state.entries[0]!.session, "s1");
 });
 
-test("ein Fehlerlauf wird mit Status Fehler aufgenommen", () => {
+test("ein Fehlerlauf wird mit Status error aufgenommen", () => {
   const state = play(emptyState(), [
     start("e1", "s1", T0),
     { kind: "run-ended", session: "s1", time: T0 + 4_000, result: "error" },
@@ -167,7 +167,7 @@ test("ein Ende ohne laufenden Eintrag aendert nichts", () => {
 
 test("der zugestellte Prompt benennt den laufenden Eintrag", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "Baue das Plugin\nzweite Zeile" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Baue das Plugin\nzweite Zeile", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0 + 20),
   ]);
@@ -176,7 +176,7 @@ test("der zugestellte Prompt benennt den laufenden Eintrag", () => {
 
 test("ohne Zustellung faellt der Titel auf den letzten Prompt zurueck", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "Erster Auftrag" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Erster Auftrag", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
     { kind: "run-ended", session: "s1", time: T0 + 1_000, result: "done" },
@@ -187,10 +187,10 @@ test("ohne Zustellung faellt der Titel auf den letzten Prompt zurueck", () => {
 
 test("ein steer-Prompt verlaengert den Titel statt ihn zu ersetzen", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "Erster Teil" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Erster Teil", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
-    { kind: "prompt-queued", deliveryID: "z2", text: "Nachtrag" },
+    { kind: "prompt-queued", deliveryID: "z2", session: "s1", text: "Nachtrag", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z2", session: "s1", time: T0 + 5_000, delivery: "steer" },
   ]);
   assert.equal(state.entries.length, 1);
@@ -199,10 +199,10 @@ test("ein steer-Prompt verlaengert den Titel statt ihn zu ersetzen", () => {
 
 test("ein queue-Prompt benennt einen laufenden Eintrag nicht um", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "Erster Auftrag" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Erster Auftrag", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
-    { kind: "prompt-queued", deliveryID: "z2", text: "Wartet in der Schlange" },
+    { kind: "prompt-queued", deliveryID: "z2", session: "s1", text: "Wartet in der Schlange", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z2", session: "s1", time: T0 + 2_000, delivery: "queue" },
   ]);
   assert.equal(state.entries.length, 1);
@@ -222,10 +222,10 @@ test("ein queue-Prompt benennt einen laufenden Eintrag nicht um", () => {
 test("ein steer-Prompt sprengt die Titellaenge nicht", () => {
   const long = "x".repeat(MAX_TITLE);
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: long },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: long, delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
-    { kind: "prompt-queued", deliveryID: "z2", text: "Nachtrag" },
+    { kind: "prompt-queued", deliveryID: "z2", session: "s1", text: "Nachtrag", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z2", session: "s1", time: T0 + 1_000, delivery: "steer" },
   ]);
   assert.ok(state.entries[0]!.title.length <= MAX_TITLE);
@@ -233,7 +233,7 @@ test("ein steer-Prompt sprengt die Titellaenge nicht", () => {
 
 test("ein Slash-Befehl ohne Text heisst ohne Titel", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
   ]);
@@ -242,15 +242,58 @@ test("ein Slash-Befehl ohne Text heisst ohne Titel", () => {
 
 test("ein Titelrueckfall wird durch den echten Prompt ersetzt", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "Alter Auftrag" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Alter Auftrag", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
     { kind: "run-ended", session: "s1", time: T0 + 500, result: "done" },
-    { kind: "prompt-queued", deliveryID: "z2", text: "Neuer Auftrag" },
+    { kind: "prompt-queued", deliveryID: "z2", session: "s1", text: "Neuer Auftrag", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z2", session: "s1", time: T0 + 1_000, delivery: "queue" },
     start("e2", "s1", T0 + 1_100),
   ]);
   assert.equal(state.entries[1]!.title, "Neuer Auftrag");
+});
+
+test("der Lauf kennt seinen Titel schon beim Start, bevor er zugestellt ist", () => {
+  // So liefert es der Host wirklich: erst `enqueued`, dann `execution.started`,
+  // dann `delivered`. Der Titel darf nicht am fehlenden Rueckfall scheitern.
+  const state = play(emptyState(), [
+    { kind: "prompt-queued", deliveryID: "m1", session: "s1", text: "Prüfe die Seitenleiste", delivery: "steer" },
+    start("e1", "s1", T0),
+    { kind: "prompt-delivered", deliveryID: "m1", session: "s1", time: T0 + 9, delivery: "steer" },
+  ]);
+  assert.equal(state.entries.length, 1);
+  assert.equal(state.entries[0]!.title, "Prüfe die Seitenleiste");
+  // Der Text ist zugestellt und damit nicht mehr vorgemerkt.
+  assert.equal(state.pending["s1"], undefined);
+});
+
+test("der erste queue-Prompt benennt den gerade gestarteten Lauf", () => {
+  const state = play(emptyState(), [
+    { kind: "prompt-queued", deliveryID: "m1", session: "s1", text: "Erster Auftrag", delivery: "queue" },
+    start("e1", "s1", T0),
+    { kind: "prompt-delivered", deliveryID: "m1", session: "s1", time: T0 + 9, delivery: "queue" },
+  ]);
+  assert.equal(state.entries[0]!.title, "Erster Auftrag");
+});
+
+test("ein vorgemerkter Prompt geht nicht in eine fremde Sitzung", () => {
+  const state = play(emptyState(), [
+    { kind: "prompt-queued", deliveryID: "m1", session: "s1", text: "Gehört zu s1", delivery: "queue" },
+    start("e2", "s2", T0),
+  ]);
+  assert.equal(state.entries[0]!.session, "s2");
+  assert.equal(state.entries[0]!.title, UNTITLED);
+});
+
+test("ein verworfener Prompt benennt den nächsten Lauf nicht", () => {
+  const state = play(emptyState(), [
+    { kind: "prompt-queued", deliveryID: "m1", session: "s1", text: "Doch verworfen", delivery: "queue" },
+    { kind: "prompt-cancelled", deliveryID: "m1", session: "s1" },
+    start("e1", "s1", T0),
+  ]);
+  assert.equal(state.entries[0]!.title, UNTITLED);
+  assert.equal(state.texts["m1"], undefined);
+  assert.equal(state.pending["s1"], undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -266,7 +309,7 @@ test("Wartezeit zaehlt zur Laufzeit und wird ausgewiesen", () => {
   ]);
   const entry = state.entries[0]!;
   assert.equal(durationMs(entry, T0 + 99_999), 23_000);
-  assert.equal(waitingNote(entry, T0 + 99_999), "20s warten");
+  assert.equal(waitingNote(entry, T0 + 99_999), "20s waiting");
 });
 
 test("eine laufende Wartezeit wird beim Abschluss mitgerechnet", () => {
@@ -275,7 +318,7 @@ test("eine laufende Wartezeit wird beim Abschluss mitgerechnet", () => {
     { kind: "waiting-started", session: "s1", time: T0 + 1_000 },
     { kind: "run-ended", session: "s1", time: T0 + 6_000, result: "done" },
   ]);
-  assert.equal(waitingNote(state.entries[0]!, T0 + 6_000), "5s warten");
+  assert.equal(waitingNote(state.entries[0]!, T0 + 6_000), "5s waiting");
 });
 
 test("verschachtelte Wartestarts zaehlen nur einmal", () => {
@@ -286,7 +329,7 @@ test("verschachtelte Wartestarts zaehlen nur einmal", () => {
     { kind: "waiting-ended", session: "s1", time: T0 + 3_000 },
     { kind: "run-ended", session: "s1", time: T0 + 4_000, result: "done" },
   ]);
-  assert.equal(waitingNote(state.entries[0]!, T0 + 4_000), "2s warten");
+  assert.equal(waitingNote(state.entries[0]!, T0 + 4_000), "2s waiting");
 });
 
 test("der laufende Eintrag zeigt keine Wartezeit an", () => {
@@ -337,11 +380,11 @@ test("die Statistik zaehlt abgebrochene Laeufe mit", () => {
 });
 
 test("die Summenzeile nennt Anzahl, Summe und Durchschnitt", () => {
-  assert.equal(summaryLine({ count: 1, totalMs: 83_000, averageMs: 83_000 }), "1 Aufgabe, 1m 23s, Ø 1m 23s");
+  assert.equal(summaryLine({ count: 1, totalMs: 83_000, averageMs: 83_000 }), "1 task, 1m 23s, Ø 1m 23s");
   // 2_538_000 ms / 12 = 211_500 ms = 3m 31,5s, gerundet auf ganze Sekunden.
   assert.equal(
     summaryLine({ count: 12, totalMs: 2_538_000, averageMs: 211_500 }),
-    "12 Aufgaben, 42m 18s, Ø 3m 32s",
+    "12 tasks, 42m 18s, Ø 3m 32s",
   );
   assert.equal(summaryLine({ count: 0, totalMs: 0, averageMs: 0 }), undefined);
 });
@@ -470,7 +513,7 @@ test("Aufraeumen entfernt Eintraege jenseits der Altersgrenze", () => {
 
 test("Aufraeumen behaelt den letzten Prompt lebendiger Sitzungen", () => {
   const state = play(emptyState(), [
-    { kind: "prompt-queued", deliveryID: "z1", text: "Bleibt erhalten" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Bleibt erhalten", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0),
   ]);
@@ -497,7 +540,7 @@ test("eine realistische Folge ergibt die erwarteten drei Zeilen", () => {
   let state = emptyState();
   const sequence: Event[] = [
     // Aufgabe 1: Prompt, Lauf, Warten auf Freigabe, erfolgreich.
-    { kind: "prompt-queued", deliveryID: "z1", text: "Baue das Plugin" },
+    { kind: "prompt-queued", deliveryID: "z1", session: "s1", text: "Baue das Plugin", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z1", session: "s1", time: T0, delivery: "queue" },
     start("e1", "s1", T0 + 10),
     { kind: "waiting-started", session: "s1", time: T0 + 5_000 },
@@ -505,7 +548,7 @@ test("eine realistische Folge ergibt die erwarteten drei Zeilen", () => {
     { kind: "run-ended", session: "s1", time: T0 + 20_000, result: "done" },
     // Aufgabe 2: der naechste Prompt wartet in der Schlange und benennt die
     // neue Aufgabe, ohne die abgeschlossene umzubenennen.
-    { kind: "prompt-queued", deliveryID: "z2", text: "Und die Tests" },
+    { kind: "prompt-queued", deliveryID: "z2", session: "s1", text: "Und die Tests", delivery: "queue" },
     { kind: "prompt-delivered", deliveryID: "z2", session: "s1", time: T0 + 30_000, delivery: "queue" },
     start("e2", "s1", T0 + 30_100),
     { kind: "run-ended", session: "s1", time: T0 + 40_000, result: "done" },
@@ -529,7 +572,7 @@ test("eine realistische Folge ergibt die erwarteten drei Zeilen", () => {
   assert.equal(visible[1]!.status, "done");
   assert.equal(visible[2]!.status, "done");
   assert.equal(durationMs(visible[2]!, T0 + 100_000), 19_990);
-  assert.equal(waitingNote(visible[2]!, T0 + 100_000), "10s warten");
+  assert.equal(waitingNote(visible[2]!, T0 + 100_000), "10s waiting");
 
   const numbers = stats(state.entries, T0 + 100_000);
   assert.equal(numbers.count, 3);

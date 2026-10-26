@@ -18,7 +18,7 @@ Fehler
 ## Installation
 
 ```
-opencode plugin add github:emelpe78/opencode-task-timer#v0.1.0
+opencode plugin add github:emelpe78/opencode-task-timer#v0.1.7
 ```
 
 Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in
@@ -70,12 +70,33 @@ verschwinden sofort.
 ## Entwicklung
 
 ```
+npm install
+npm run bauen   # schreibt dist/tui.js und dist/laufzeit.js
 npm test
 ```
 
 Die Messlogik liegt in `src/laufzeit.ts` und ist frei von OpenCode-Abhängigkeiten,
 damit sie mit `node --test` prüfbar bleibt. `src/tui.tsx` verdrahtet nur die
 Ereignisse und rendert den Block.
+
+`dist/` ist eingecheckt, damit die Installation direkt aus dem Repository
+funktioniert.
+
+## Fallstricke beim Veröffentlichen
+
+- OpenCodes Solid-JSX-Transform überspringt Pfade mit `/node_modules/`. Ein
+  veröffentlichtes Plugin liegt genau dort, deshalb braucht es ein vorgebautes
+  `dist/`. Ohne das wird sein JSX als React-JSX übersetzt und der Ladevorgang
+  scheitert an einem fehlenden `react`.
+- `dist/` muss die Messlogik mitliefern. Ein Import auf `./laufzeit.ts` schlägt
+  fehl, weil `src/` nicht im Paket liegt.
+- `package.json` darf keines der Skripte `build`, `prepare`, `prepack`,
+  `install`, `preinstall` oder `postinstall` nennen. npms pacote löst sonst bei
+  einer Git-Abhängigkeit eine Vorbereitung aus, die hier scheitert. Der Build
+  heißt deshalb `bauen`.
+- Die Imports auf `@opentui/solid` und `solid-js` werden auf die Laufzeitmodule
+  des Hosts umgeschrieben (`opentui:runtime-module:…`), wie im offiziellen
+  Plugin `oc-tps`.
 
 ## Voraussetzungen
 

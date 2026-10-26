@@ -25,5 +25,10 @@ bleiben können.
   wechseln. Fehlt ein Feld, wird das Ereignis übersprungen, nicht geraten.
 - Keine neue Abhängigkeit ohne Grund. Laufzeit braucht nur `@opencode/plugin`
   und `solid-js`, beides stellt der Host.
-- Vor jeder Veröffentlichung `npm test` grün und die Version in `package.json`
-  und `CHANGELOG.md` zusammen hochziehen.
+- Vor jeder Veröffentlichung `npm test` grün, `npm run bauen` ausgeführt und die
+  Version in `package.json` und `CHANGELOG.md` zusammen hochziehen.
+- `package.json` darf keines der Skripte `build`, `prepare`, `prepack`,
+  `install`, `preinstall` oder `postinstall` nennen: npms pacote löst dann bei
+  einer Git-Abhängigkeit eine Vorbereitung aus, die scheitert.
+- `dist/` ist eingecheckt und muss die Messlogik mitliefern. Ein Import in
+  `dist/tui.js` darf nicht auf `src/` zeigen, weil `src/` nicht im Paket liegt.

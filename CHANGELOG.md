@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.1.7] - 2026-10-26
+
+### Behoben
+
+- Die veröffentlichte Fassung lädt jetzt. Drei Ursachen nacheinander:
+  - JSX in `node_modules` wird nicht transformiert, deshalb fehlte ein
+    vorgebautes `dist/` (`Cannot find package 'react'`).
+  - `dist/tui.js` importierte `./laufzeit.ts`, die nicht im Paket lag
+    (`Cannot find module './laufzeit.ts'`).
+  - Ein `build`-Skript löste npms Vorbereitung für Git-Abhängigkeiten aus und
+    ließ die Installation abbrechen (`git dep preparation failed`). Der Build
+    heißt jetzt `bauen`.
+
+### Hinzugefügt
+
+- `scripts/build.mjs` baut `src/tui.tsx` und `src/laufzeit.ts` nach `dist/`.
+
 ## [0.1.0] - 2026-10-26
 
 Erste Fassung.

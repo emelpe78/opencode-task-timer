@@ -21,8 +21,10 @@ import presetTypeScript from "@babel/preset-typescript";
 import solid from "babel-preset-solid";
 
 const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const quelle = resolve(wurzel, "src/tui.tsx");
-const ziel = resolve(wurzel, "dist/tui.js");
+const quelleTui = resolve(wurzel, "src/tui.tsx");
+const quelleLogik = resolve(wurzel, "src/laufzeit.ts");
+const zielTui = resolve(wurzel, "dist/tui.js");
+const zielLogik = resolve(wurzel, "dist/laufzeit.js");
 
 /** Der Host löst diese Namen über seine eingebauten Kopien auf. */
 const LAUFZEIT_MODULE = {
@@ -30,10 +32,10 @@ const LAUFZEIT_MODULE = {
   "solid-js": "opentui:runtime-module:solid-js",
 };
 
-const code = await readFile(quelle, "utf8");
+const code = await readFile(quelleTui, "utf8");
 
 const ergebnis = await transformAsync(code, {
-  filename: quelle,
+  filename: quelleTui,
   configFile: false,
   babelrc: false,
   presets: [[presetTypeScript, {}], [solid, { moduleName: "@opentui/solid", generate: "universal" }]],
@@ -57,6 +59,22 @@ const ergebnis = await transformAsync(code, {
 
 if (!ergebnis?.code) throw new Error("Der Solid-Transform hat keinen Code erzeugt.");
 
-await mkdir(dirname(ziel), { recursive: true });
-await writeFile(ziel, `${ergebnis.code}\n`, "utf8");
-console.log(`dist/tui.js geschrieben (${ergebnis.code.length} Zeichen)`);
+// Der Import in dist/tui.js zeigt auf die gebaute Logik, nicht auf die Quelle.
+const ausgabeTui = ergebnis.code.replace(/\.\/laufzeit\.ts/g, "./laufzeit.js");
+
+await mkdir(dirname(zielTui), { recursive: true });
+await writeFile(zielTui, `${ausgabeTui}\n`, "utf8");
+
+// Die Messlogik ist reines TypeScript ohne JSX und wird nur enttypt.
+const logik = await readFile(quelleLogik, "utf8");
+const logikErgebnis = await transformAsync(logik, {
+  filename: quelleLogik,
+  configFile: false,
+  babelrc: false,
+  presets: [[presetTypeScript, {}]],
+});
+
+if (!logikErgebnis?.code) throw new Error("Der TypeScript-Transform hat keinen Code erzeugt.");
+await writeFile(zielLogik, `${logikErgebnis.code}\n`, "utf8");
+
+console.log(`dist/tui.js und dist/laufzeit.js geschrieben`);

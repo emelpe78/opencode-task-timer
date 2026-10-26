@@ -18,7 +18,7 @@ import { createElement as _$createElement } from "opentui:runtime-module:%40open
 
 import { Plugin } from "@opencode/plugin/tui";
 import { For, Show, createMemo, createSignal, onCleanup } from "opentui:runtime-module:solid-js";
-import { anwenden, dauerMs, formatiereDauer, laufenderEintrag, leererZustand, raeumeAuf, schliesseLiegengebliebeneAb, sichtbareEintraege, statistik, statusText, summenzeile, warteAusweis } from "./laufzeit.ts";
+import { anwenden, dauerMs, formatiereDauer, laufenderEintrag, leererZustand, raeumeAuf, schliesseLiegengebliebeneAb, sichtbareEintraege, statistik, statusText, summenzeile, warteAusweis } from "./laufzeit.js";
 
 /** Speicherschlüssel im durabelen Host-Store. */
 const SPEICHER = "laufzeiten";

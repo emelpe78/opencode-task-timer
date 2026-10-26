@@ -7,10 +7,12 @@ Ein einzelnes TUI-Plugin für OpenCode 2. Klein genug, dass die Regeln kurz blei
 - `src/measurement.ts` ist die reine Messlogik. Keine OpenCode- und keine Solid-Abhängigkeit, kein JSX. Nur so bleibt sie mit `node --test` prüfbar.
 - `src/tui.tsx` verdrahtet die Ereignisse und rendert den Block. Hier steht keine Fachlogik, nur Übersetzung und Darstellung.
 - `test/measurement.test.ts` prüft die Logik und nachgebildete Ereignisfolgen.
+- `docs/measurement.md` ist der Vertrag für die Messung, `docs/changelog.md` der Vertrag für Aufbau und Pflege der `CHANGELOG.md`.
 
 ## Regeln
 
 - Messverhalten ändern heißt zuerst `docs/measurement.md` ändern. Der Vertrag ist die Quelle, nicht der Code.
+- Freigabewürdige Arbeit wird im selben Schritt in `CHANGELOG.md` eingetragen, nach den Regeln in `docs/changelog.md`.
 - Neue oder geänderte Fachlogik gehört nach `src/measurement.ts` und bekommt einen Test. `src/tui.tsx` bleibt dünn.
 - Bezeichner, Variablen, Funktionen, Typen, Properties und Dateinamen sind englisch, ebenso interne Literale wie Ereignisarten und Lauf-Status.
 - Nutzertexte, Kommentare und Dokumentation bleiben deutsch. Nutzertexte sind genderneutral mit `:in` / `:innen` und enthalten niemals den Geviertstrich `—` (U+2014).

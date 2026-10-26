@@ -64,7 +64,7 @@ npm run bauen   # schreibt dist/tui.js und dist/measurement.js
 npm test
 ```
 
-Die Messlogik liegt in `src/measurement.ts` und ist frei von OpenCode-Abhängigkeiten, damit sie mit `node --test` prüfbar bleibt. `src/tui.tsx` verdrahtet nur die Ereignisse und rendert den Block.
+Die Messlogik liegt in `src/measurement.ts` und ist frei von OpenCode-Abhängigkeiten, damit sie mit `node --test` prüfbar bleibt. `src/tui.tsx` verdrahtet nur die Ereignisse und rendert den Block. Was gemessen wird, steht in [README-Messung](docs/measurement.md); wie `CHANGELOG.md` aufgebaut und gepflegt wird, in [Changelog-Regeln](docs/changelog.md).
 
 `dist/` ist eingecheckt, damit die Installation direkt aus dem Repository funktioniert.
 

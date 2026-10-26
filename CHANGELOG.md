@@ -1,12 +1,18 @@
 # Changelog
 
-Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
+Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Aufbau und Pflege sind in [docs/changelog.md](docs/changelog.md) beschrieben.
+
+## [Unreleased]
+
+---
 
 ## [0.1.7] - 2026-10-26
 
+Patch-Release: **Die veröffentlichte Fassung lädt wieder**.
+
 ### Behoben
 
-- Die veröffentlichte Fassung lädt jetzt. Drei Ursachen nacheinander:
+- Drei Ursachen nacheinander, die das Laden verhinderten:
   - JSX in `node_modules` wird nicht transformiert, deshalb fehlte ein vorgebautes `dist/` (`Cannot find package 'react'`).
   - `dist/tui.js` importierte `./laufzeit.ts`, die nicht im Paket lag (`Cannot find module './laufzeit.ts'`).
   - Ein `build`-Skript löste npms Vorbereitung für Git-Abhängigkeiten aus und ließ die Installation abbrechen (`git dep preparation failed`). Der Build heißt jetzt `bauen`.
@@ -17,7 +23,7 @@ Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Cha
 
 ## [0.1.0] - 2026-10-26
 
-Erste Fassung.
+Minor-Release: **Erste Fassung**. Die Linie bringt den Laufzeiten-Block in der Seitenleiste, die Messung je Agentenlauf samt Wartezeit und die durable Ablage. Die Patches dieser Linie nach `0.1.0` beheben ausschließlich das Laden der veröffentlichten Fassung.
 
 ### Hinzugefügt
 

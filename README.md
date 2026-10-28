@@ -15,11 +15,17 @@ Durations
 
 ## Installation
 
+Über npm:
+
+```
+opencode plugin add opencode-task-timer
+```
+
+Oder direkt vom Repository:
+
 ```
 opencode plugin add github:emelpe78/opencode-task-timer#v0.1.8
 ```
-
-Das Repository ist derzeit privat. Der Befehl braucht deshalb einen Git-Zugang mit Leserecht, also einen hinterlegten SSH-Schlüssel oder ein GitHub-Token. Ohne Zugriff schlägt der Abruf fehl.
 
 Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in der Sitzung die erste Aufgabe gelaufen ist. Eine Sitzung ohne Aufgaben zeigt nichts.
 
@@ -84,4 +90,4 @@ Die Messlogik liegt in `src/measurement.ts` und ist frei von OpenCode-Abhängigk
 
 ## Lizenz
 
-MIT
+[MIT](LICENSE)

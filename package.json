@@ -3,6 +3,15 @@
   "version": "0.1.8",
   "description": "OpenCode-2-TUI-Plugin: Laufzeiten je Aufgabe in der Seitenleiste",
   "license": "MIT",
+  "author": "Marc Lettau-Poelchen <lettau.poelchen@emelpe.de>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emelpe78/opencode-task-timer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/emelpe78/opencode-task-timer/issues"
+  },
+  "homepage": "https://github.com/emelpe78/opencode-task-timer#readme",
   "type": "module",
   "exports": {
     "./tui": "./dist/tui.js"
@@ -10,7 +19,8 @@
   "files": [
     "dist/",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node --test 'test/*.test.ts'",

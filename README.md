@@ -2,7 +2,7 @@
 
 OpenCode-2-TUI-Plugin: Laufzeiten je Agentenaufgabe in der Seitenleiste.
 
-Misst, wie lange der Agent für jede Aufgabe braucht, und zeigt die Dauern als Block in der TUI-Seitenleiste.
+Misst, wie lange der Agent für jede Aufgabe braucht, und zeigt die Dauern als Block in der TUI-Seitenleiste. Typischer Anwendungsfall: die Dauer messen, die ein LLM braucht, um eine Aufgabe abzuschließen.
 
 ```
 Durations
@@ -26,7 +26,7 @@ opencode plugin add opencode-task-timer
 Oder direkt vom Repository:
 
 ```
-opencode plugin add github:emelpe78/opencode-task-timer#v0.1.9
+opencode plugin add github:emelpe78/opencode-task-timer#v0.1.10
 ```
 
 Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in der Sitzung die erste Aufgabe gelaufen ist. Eine Sitzung ohne Aufgaben zeigt nichts.

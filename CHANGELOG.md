@@ -6,6 +6,14 @@ Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Cha
 
 ---
 
+## [0.1.10] - 2026-10-28
+
+Patch-Release: **Anwendungsfall LLM-Dauer**.
+
+### Geändert
+
+- **README:** Nennt den typischen Anwendungsfall, die Dauer zu messen, die ein LLM braucht, um eine Aufgabe abzuschließen.
+
 ## [0.1.9] - 2026-10-28
 
 Patch-Release: **Öffentlich und auf npm**.

@@ -1,7 +1,7 @@
 {
   "name": "opencode-task-timer",
   "version": "0.1.8",
-  "description": "OpenCode-2-TUI-Plugin: Laufzeiten je Aufgabe in der Seitenleiste",
+  "description": "OpenCode 2 TUI plugin: per-task agent durations in the sidebar",
   "license": "MIT",
   "author": "Marc Lettau-Poelchen <lettau.poelchen@emelpe.de>",
   "repository": {
@@ -32,7 +32,16 @@
   "keywords": [
     "opencode",
     "opencode-plugin",
-    "tui"
+    "opencode-plugins",
+    "tui",
+    "timer",
+    "duration",
+    "agent",
+    "sidebar",
+    "solid-js",
+    "typescript",
+    "cli",
+    "productivity"
   ],
   "devDependencies": {
     "@babel/core": "^7.29.7",

@@ -7,6 +7,7 @@ Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Cha
 ### Geändert
 
 - Repository ist öffentlich unter `emelpe78/opencode-task-timer`; das Paket liegt auf npm als `opencode-task-timer`.
+- Beschreibung und Keywords für GitHub und npm geschärft, damit das Plugin leichter gefunden wird.
 
 ---
 

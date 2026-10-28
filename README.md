@@ -1,6 +1,8 @@
 # opencode-task-timer
 
-Ein Plugin für OpenCode 2, das in der Seitenleiste anzeigt, wie lange der Agent für jede Aufgabe gebraucht hat.
+OpenCode-2-TUI-Plugin: Laufzeiten je Agentenaufgabe in der Seitenleiste.
+
+Misst, wie lange der Agent für jede Aufgabe braucht, und zeigt die Dauern als Block in der TUI-Seitenleiste.
 
 ```
 Durations

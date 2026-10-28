@@ -6,6 +6,14 @@ Alle nennenswerten Änderungen an diesem Plugin. Format angelehnt an [Keep a Cha
 
 ---
 
+## [0.1.11] - 2026-10-28
+
+Patch-Release: **Build-Skript auf Englisch**.
+
+### Geändert
+
+- **Build-Skript:** heißt jetzt `compile` statt `bauen`. Weiterhin nicht `build`, damit npms Vorbereitung für Git-Abhängigkeiten nicht scheitert.
+
 ## [0.1.10] - 2026-10-28
 
 Patch-Release: **Anwendungsfall LLM-Dauer**.

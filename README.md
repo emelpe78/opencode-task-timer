@@ -26,7 +26,7 @@ opencode plugin add opencode-task-timer
 Oder direkt vom Repository:
 
 ```
-opencode plugin add github:emelpe78/opencode-task-timer#v0.1.10
+opencode plugin add github:emelpe78/opencode-task-timer#v0.1.11
 ```
 
 Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in der Sitzung die erste Aufgabe gelaufen ist. Eine Sitzung ohne Aufgaben zeigt nichts.
@@ -68,7 +68,7 @@ Der Zustand liegt im durabelen Store des Hosts und überlebt Neustarts. Er enth�
 
 ```
 npm install
-npm run bauen   # schreibt dist/tui.js und dist/measurement.js
+npm run compile   # schreibt dist/tui.js und dist/measurement.js
 npm test
 ```
 
@@ -80,7 +80,7 @@ Die Messlogik liegt in `src/measurement.ts` und ist frei von OpenCode-Abhängigk
 
 - OpenCodes Solid-JSX-Transform überspringt Pfade mit `/node_modules/`. Ein veröffentlichtes Plugin liegt genau dort, deshalb braucht es ein vorgebautes `dist/`. Ohne das wird sein JSX als React-JSX übersetzt und der Ladevorgang scheitert an einem fehlenden `react`.
 - `dist/` muss die Messlogik mitliefern. Ein Import auf `./measurement.ts` schlägt fehl, weil `src/` nicht im Paket liegt.
-- `package.json` darf keines der Skripte `build`, `prepare`, `prepack`, `install`, `preinstall` oder `postinstall` nennen. npms pacote löst sonst bei einer Git-Abhängigkeit eine Vorbereitung aus, die hier scheitert. Der Build heißt deshalb `bauen`.
+- `package.json` darf keines der Skripte `build`, `prepare`, `prepack`, `install`, `preinstall` oder `postinstall` nennen. npms pacote löst sonst bei einer Git-Abhängigkeit eine Vorbereitung aus, die hier scheitert. Der Build heißt deshalb `compile`.
 - Die Imports auf `@opentui/solid` und `solid-js` werden auf die Laufzeitmodule des Hosts umgeschrieben (`opentui:runtime-module:…`), wie im offiziellen Plugin `oc-tps`.
 - `context.keymap.layer` braucht `mode: "global"`, sonst landet die Ebene im Standardmodus `base`. Der greift nur bei leerem Eingabefeld, während Befehlspalette und Slash-Vervollständigung im globalen Modus laufen. Ohne `mode` sind die Befehle dort unsichtbar, obwohl `palette: true` und `slash` gesetzt sind.
 - Ein Plugin in `~/.config/opencode/plugins/` ist ein Server-Plugin und bekommt keinen TUI-Kontext. `context.keymap` fehlt dort, der Ladevorgang scheitert mit `undefined is not an object`. TUI-Plugins gehören über `cli.json` oder `opencode plugin add` eingebunden.

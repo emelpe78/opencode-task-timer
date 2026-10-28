@@ -26,7 +26,7 @@ opencode plugin add opencode-task-timer
 Oder direkt vom Repository:
 
 ```
-opencode plugin add github:emelpe78/opencode-task-timer#v0.1.8
+opencode plugin add github:emelpe78/opencode-task-timer#v0.1.9
 ```
 
 Danach OpenCode neu starten. Der Block erscheint in der Seitenleiste, sobald in der Sitzung die erste Aufgabe gelaufen ist. Eine Sitzung ohne Aufgaben zeigt nichts.

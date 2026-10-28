@@ -1,6 +1,6 @@
 {
   "name": "opencode-task-timer",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "OpenCode 2 TUI plugin: per-task agent durations in the sidebar",
   "license": "MIT",
   "author": "Marc Lettau-Poelchen <lettau.poelchen@emelpe.de>",
